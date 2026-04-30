@@ -3,6 +3,15 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+/node_modules/
+/build/
+.gradle/
+*.log
+*.class
+pom.xml
+src/main/resources/application.yml
+.env
+
 
 ### STS ###
 .apt_generated
