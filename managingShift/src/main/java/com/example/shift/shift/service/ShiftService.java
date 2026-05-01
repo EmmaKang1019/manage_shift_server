@@ -70,6 +70,7 @@ public class ShiftService {
                 shift.getId(),
                 shift.getEmployee().getId(),
                 shift.getEmployee().getName(),
+                shift.getEmployee().getPosition(),
                 shift.getWorkDate(),
                 shift.getStartTime(),
                 shift.getEndTime(),

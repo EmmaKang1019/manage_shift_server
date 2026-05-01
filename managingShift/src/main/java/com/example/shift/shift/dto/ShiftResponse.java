@@ -7,6 +7,7 @@ public record ShiftResponse(
         Long id,
         Long employeeId,
         String employeeName,
+        String employeePosition,
         LocalDate workDate,
         LocalTime startTime,
         LocalTime endTime,

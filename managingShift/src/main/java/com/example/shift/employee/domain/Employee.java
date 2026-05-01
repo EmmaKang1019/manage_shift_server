@@ -18,14 +18,18 @@ public class Employee {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Column(nullable = false, length = 50)
+    private String position;
+
     @Column(nullable = false)
     private boolean active = true;
 
     protected Employee() {
     }
 
-    public Employee(String name) {
+    public Employee(String name, String position) {
         this.name = name;
+        this.position = position;
     }
 
     public Long getId() {
@@ -34,6 +38,10 @@ public class Employee {
 
     public String getName() {
         return name;
+    }
+
+    public String getPosition() {
+        return position;
     }
 
     public boolean isActive() {
