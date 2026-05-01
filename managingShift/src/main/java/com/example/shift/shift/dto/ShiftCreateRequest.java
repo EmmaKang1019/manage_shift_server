@@ -5,6 +5,7 @@ import java.time.LocalTime;
 
 public record ShiftCreateRequest(
         Long employeeId,
+        Long positionId,
         LocalDate workDate,
         LocalTime startTime,
         LocalTime endTime,

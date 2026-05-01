@@ -1,6 +1,7 @@
 package com.example.shift.shift.domain;
 
 import com.example.shift.employee.domain.Employee;
+import com.example.shift.team.domain.Position;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -25,6 +26,10 @@ public class Shift {
     @JoinColumn(name = "employee_id")
     private Employee employee;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "position_id")
+    private Position position;
+
     @Column(nullable = false)
     private LocalDate workDate;
 
@@ -40,8 +45,9 @@ public class Shift {
     protected Shift() {
     }
 
-    public Shift(Employee employee, LocalDate workDate, LocalTime startTime, LocalTime endTime, String memo) {
+    public Shift(Employee employee, Position position, LocalDate workDate, LocalTime startTime, LocalTime endTime, String memo) {
         this.employee = employee;
+        this.position = position;
         this.workDate = workDate;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -54,6 +60,10 @@ public class Shift {
 
     public Employee getEmployee() {
         return employee;
+    }
+
+    public Position getPosition() {
+        return position;
     }
 
     public LocalDate getWorkDate() {
