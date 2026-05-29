@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/manage_shift_server.iml" filepath="$PROJECT_DIR$/.idea/manage_shift_server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/demo/managingShift.iml" filepath="$PROJECT_DIR$/demo/managingShift.iml" />
     </modules>
   </component>
 </project>

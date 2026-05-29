@@ -11,7 +11,10 @@ target/
 pom.xml
 src/main/resources/application.yml
 .env
-
+### AI
+.superpowers/
+/superpowers
+../AGENTS.md
 
 ### STS ###
 .apt_generated
