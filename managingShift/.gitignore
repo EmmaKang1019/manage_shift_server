@@ -13,7 +13,7 @@ src/main/resources/application.yml
 .env
 ### AI
 .superpowers/
-/superpowers
+./docs/superpowers/
 ../AGENTS.md
 
 ### STS ###
