@@ -30,16 +30,21 @@ src/main/java/com/example/shift/config/SecurityConfig.java
 src/test/java/com/example/shift/ShiftApplicationTests.java
 docs/superpowers/specs/2026-05-22-shift-coverage-mvp-design.md
 docs/superpowers/specs/2026-05-22-shift-coverage-mvp-design.ko.md
+docs/superpowers/specs/2026-05-23-mobile-pwa-networking-design.md
+docs/superpowers/specs/2026-05-23-mobile-pwa-networking-design.ko.md
+docs/superpowers/plans/2026-05-23-shift-coverage-backend-foundation-plan.md
 docs/superpowers/plans/2026-05-23-shift-coverage-backend-foundation-plan.ko.md
 ```
 
 Observed state:
 
-- As of 2026-05-29, `.\mvnw.cmd -q test` fails during test compilation because `EmployeeRepository`, `PositionRepository`, and `TeamRepository` do not exist yet.
-- Entity enums and early `Employee`, `Team`, and `Position` drafts exist, but repository/service/controller/dto implementation is not complete.
-- The current `Employee` draft uses one `Position`; this plan requires `Employee.positions` as `Set<Position>` so one staff member can cover multiple duties.
-- `mvn` is not installed locally.
-- The temporary `src/main/java/com/example/shift/test/LoginSecurityTest.java` MVC controller has been removed.
+- As of 2026-05-30, `.\mvnw.cmd -q test` passes when Maven can resolve dependencies.
+- `Employee`, `Team`, `Position`, their repositories, and part of `EmployeeService` are implemented.
+- `Employee` must support multiple `Position` values and multiple `Team` memberships.
+- `EmployeeService` should recommend only active employees who share at least one team with the requester.
+- Controller and DTO packages are not implemented yet.
+- `SecurityConfig` does not yet include `/api/**` access and CORS configuration.
+- Schedule, CoverageRequest, LeaveRequest, and OpenShift entity/service/controller work is still pending.
 
 ## Scope Check
 
@@ -146,51 +151,78 @@ Default recommendation: use physically separate development and production serve
 
 ## Parallel Delivery Schedule
 
-The production target date is 2026-07-01. Do not wait for the full backend to be complete before starting frontend work. Freeze the first useful API contract early, expose controller/dto skeletons, and replace mock/minimal internals with real service logic as the backend matures.
+The production target date is 2026-07-01, but the development completion target is now 2026-06-20 so there is enough time for deployment rehearsal and release stabilization. After 2026-06-20, the project should stop adding new MVP scope and focus on release candidate hardening, mobile QA, MySQL-backed integration checks, rollback planning, and production environment verification.
+
+Start the separate React/Vite frontend project on 2026-06-03. The frontend should not wait for full backend implementation. Freeze the first useful `/api/v1/**` endpoint names and DTO shapes early, expose controller/dto skeletons, and let the frontend build against mock/minimal responses while backend internals are replaced with real service logic.
 
 ```text
-2026-05-29 to 2026-06-02
-- Repair current test compilation failure.
-- Finish Employee/Team/Position model and repositories.
-- Add MySQL dev profile.
+2026-05-30 to 2026-06-02
+- Keep the current passing test baseline.
+- Review Employee/Team/Position/EmployeeService and add any missing tests.
 - Define screen-by-screen API list and DTO contract.
+- Define MySQL dev profile, test profile, and CORS configuration.
+- Prepare the first failing tests for /api/v1 controller + dto skeletons.
 
 2026-06-03 to 2026-06-05
 - Implement /api/v1 controller + dto skeletons.
 - Return mock or minimal responses where domain logic is not ready.
-- Deploy the first backend build to the development server.
-- Verify CORS, MySQL connection, and basic API smoke tests on the development server.
-- Start frontend API client, routing, and base screens.
+- Add SecurityConfig/CORS support for the separate frontend.
+- Deploy the first backend build to the development server or define the local integration baseline.
+- Verify CORS, MySQL connection, and basic API smoke tests.
+- Create the separate React/Vite PWA project.
+- Start the frontend API client, TypeScript DTO types, mobile shell, Home route, and Schedule route.
 
 2026-06-08 to 2026-06-12
-- Implement Schedule, Employee, and eligible substitute workflows.
+- Implement SchedulePattern, Shift, and ScheduleService.
+- Connect Employee and eligible substitute APIs to real service logic.
 - Connect Home and Schedule frontend screens to real APIs.
-- Deploy to the development server at least once per day and verify frontend integration.
+- Prepare static shells for My Requests and Manager Queue.
+- Verify frontend/backend integration at least once per day.
 
-2026-06-15 to 2026-06-19
-- Implement coverage, absence, planned leave, and manager queue workflows.
-- Connect My Requests and Manager Queue frontend screens.
-- Verify request creation and approval flows end-to-end on the development server.
+2026-06-13 to 2026-06-16
+- Implement CoverageRequest, absence request, and planned leave backend workflows.
+- Implement Manager Queue read/approve/decline APIs.
+- Connect My Requests and Manager Queue screens to real APIs.
+- Verify request creation and approval flows end-to-end.
 
-2026-06-22 to 2026-06-24
+2026-06-17 to 2026-06-20
 - Implement open shift application, assignment, approval, and decline workflows.
-- Complete MVP feature behavior.
-- Treat the development server as the release-candidate verification environment.
+- Run mobile QA for the employee and manager core flows.
+- Harden loading, empty, and error states.
+- Finalize API error responses and CORS checks.
+- Complete MVP development.
 
-2026-06-25 to 2026-06-26
-- Harden API error responses, CORS, and tests.
-- Verify loading, empty, and error states through frontend integration.
-- Rehearse the production deployment process.
-
-2026-06-29 to 2026-06-30
-- Run MySQL-backed deployment rehearsal and environment/profile checks.
+2026-06-21 to 2026-06-24
+- Stabilize the release candidate.
+- Run MySQL-backed integration tests.
 - Perform mobile browser smoke tests.
+- Run the first production deployment rehearsal.
+
+2026-06-25 to 2026-06-30
+- Verify production profile, environment variables, domain, and database setup.
+- Run the second deployment rehearsal.
+- Run regression tests and fix final release-blocking bugs.
+- Confirm initial production data and rollback procedure.
 
 2026-07-01
 - Production server launch.
 ```
 
-The key milestone is 2026-06-05: the frontend must be able to call stable `/api/v1/**` skeleton endpoints by then, even if some endpoints still return minimal data.
+The first key milestone is 2026-06-05: the frontend must be able to call stable `/api/v1/**` skeleton endpoints by then, even if some endpoints still return minimal data. The second milestone is 2026-06-12: Home and Schedule should work against real APIs. The third milestone is 2026-06-20: new MVP feature development stops and release candidate stabilization begins.
+
+## Today's Work Target
+
+Today is not a large feature implementation day. The goal is to make frontend parallel development possible.
+
+Guided learning sequence:
+
+1. Verify that `.\mvnw.cmd -q test` passes.
+2. Open `src/main/java/com/example/shift/entity/Employee.java`, `Team.java`, `Position.java`, and `EmployeeService.java`, then explain how the current model represents multiple teams, multiple positions, and active substitute eligibility.
+3. Read the Task 10 API list in this plan and mark any missing endpoints needed by Home, Schedule, My Requests, or Manager Queue.
+4. Confirm the file list for the upcoming `controller`, `dto`, and `config` packages.
+5. If time remains, write the first failing `ShiftCoverageApiTest` for the `/api/v1/schedule` skeleton response. The goal is not to finish the feature today, but to freeze the response shape that the frontend can build against.
+
+Today's finish line is a clear API contract and skeleton implementation path for the frontend project to start on 2026-06-03, not the start of Task 5 implementation.
 
 ## File Structure
 
@@ -1189,4 +1221,3 @@ Plan complete and saved to `docs/superpowers/plans/2026-05-23-shift-coverage-bac
 **1. Subagent-Driven (recommended)** - dispatch a fresh subagent per task and review between tasks.
 
 **2. Inline Execution** - execute tasks in this session using `superpowers:executing-plans`, with checkpoints.
-

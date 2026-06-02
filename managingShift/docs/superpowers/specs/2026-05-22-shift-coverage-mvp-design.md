@@ -22,6 +22,8 @@ Client priority:
 
 This means backend APIs should return stable JSON DTOs that are useful to both web and native mobile clients. The backend should avoid returning HTML or view-specific payloads that only make sense for one frontend implementation.
 
+The production launch target remains 2026-07-01, but MVP development should complete by 2026-06-20. The separate React/Vite frontend project should start on 2026-06-03 instead of waiting for the full backend implementation. During the first frontend phase, it should build against `/api/v1/**` skeleton endpoints and mock/minimal backend responses while the backend replaces internals with real service logic.
+
 ## Product Scope
 
 ### In Scope

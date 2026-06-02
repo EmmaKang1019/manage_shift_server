@@ -1,32 +1,30 @@
 # Shift Coverage Backend Foundation 구현 계획
 
-> 이 문서는 `managingShift` Spring Boot 백엔드를 학습하면서 구현하기 위한 한국어 계획서이다.
-> 상세 코드 예제와 긴 테스트 코드는 영어 계획서
-> `docs/superpowers/plans/2026-05-23-shift-coverage-backend-foundation-plan.md`를 기준으로 확인한다.
+> 이 문서는 `managingShift` Spring Boot 프로젝트에서 shift coverage MVP 백엔드 기반을 학습하며 구현하기 위한 한국어 계획서다. 영문 기준 문서는 `docs/superpowers/plans/2026-05-23-shift-coverage-backend-foundation-plan.md`이다.
 
 ## 목표
 
-현재 `managingShift` 프로젝트에 근무 대체 요청 MVP의 백엔드 기반을 만든다.
+현재 `managingShift` 프로젝트에 shift coverage MVP의 백엔드 기반을 만든다.
 
-첫 번째 클라이언트는 별도 React/Vite 모바일 우선 PWA이고, 이후 React Native 앱도 같은 API 계약을 재사용할 수 있어야 한다.
+첫 클라이언트는 별도 React/Vite 모바일 우선 PWA이며, 향후 React Native 앱도 같은 API 계약을 재사용할 수 있어야 한다.
 
 핵심 방향:
 
 - Spring Boot 백엔드를 API-first 서비스로 만든다.
 - 안정적인 `/api/v1/**` JSON API를 제공한다.
-- 프론트엔드 개발이 백엔드 전체 구현을 기다리지 않도록 API 계약과 controller/dto skeleton을 먼저 연다.
-- 컨트롤러는 얇게 유지한다.
-- 비즈니스 규칙은 서비스 클래스에 둔다.
-- DB와 매핑되는 객체는 `entity`에 둔다.
-- API 요청/응답 객체는 `dto`에 둔다.
-- 운영 DB와 로컬 프론트 연동 DB는 MySQL을 기준으로 한다.
-- H2는 빠른 JPA 단위 테스트 보조용으로만 사용한다.
-- 테스트는 `src/test/java` 아래에 둔다.
-- `src/main/java` 아래에는 `test` 패키지를 만들지 않는다.
+- 프론트엔드 개발이 백엔드 전체 구현을 기다리지 않도록 controller/dto skeleton을 먼저 열 수 있게 한다.
+- controller는 얇게 유지한다.
+- 비즈니스 규칙은 service에 둔다.
+- DB 매핑 클래스와 enum은 `entity`에 둔다.
+- API request/response 객체는 `dto`에 둔다.
+- local/dev 및 운영 DB는 MySQL을 기준으로 한다.
+- H2는 빠른 JPA 테스트 보조 용도로만 사용한다.
+- 테스트는 `src/test/java`에 둔다.
+- `src/main/java` 아래에 `test` 패키지를 만들지 않는다.
 
 ## 아키텍처
 
-기본 패키지 구조는 가장 대중적인 Spring Boot 계층형 구조를 따른다.
+기본 패키지 구조:
 
 ```text
 com.example.shift
@@ -38,16 +36,16 @@ com.example.shift
   config
 ```
 
-각 패키지의 책임은 다음과 같다.
+각 패키지 책임:
 
-- `controller`: HTTP 요청을 받는 진입점. `@RestController`와 `/api/v1/**` URI를 둔다.
-- `dto`: API 요청/응답 전용 객체. 프론트엔드와 주고받는 JSON 계약이다.
-- `entity`: JPA 엔티티와 엔티티에서 사용하는 enum 값. DB 저장 구조와 연결된다.
-- `repository`: Spring Data JPA repository. DB 저장과 조회를 담당한다.
-- `service`: 트랜잭션 경계와 비즈니스 규칙을 담당한다.
-- `config`: 보안, CORS, 기타 Spring 설정을 담당한다.
+- `controller`: HTTP 요청 진입점. `/api/v1/**` URI를 제공한다.
+- `dto`: API 요청/응답 전용 객체. 엔티티를 직접 노출하지 않는다.
+- `entity`: JPA entity와 entity에서 사용하는 enum.
+- `repository`: Spring Data JPA repository.
+- `service`: transaction boundary와 비즈니스 규칙.
+- `config`: 보안, CORS, Spring 설정.
 
-이전 계획서의 용어는 다음처럼 바꿔서 이해한다.
+이전 계획의 용어는 다음처럼 바꿔 이해한다.
 
 ```text
 domain -> entity
@@ -63,7 +61,7 @@ request/response record -> dto
 C:\Users\MJ\Documents\workSpaces\manage_shift_server\managingShift
 ```
 
-현재 중요한 파일:
+주요 파일:
 
 ```text
 pom.xml
@@ -79,220 +77,167 @@ docs/superpowers/plans/2026-05-23-shift-coverage-backend-foundation-plan.md
 docs/superpowers/plans/2026-05-23-shift-coverage-backend-foundation-plan.ko.md
 ```
 
-확인된 상태:
-
-- 2026-05-29 기준 `.\mvnw.cmd -q test`는 컴파일 단계에서 실패한다.
-- 실패 원인은 `EmployeeRepository`, `PositionRepository`, `TeamRepository`가 아직 없기 때문이다.
-- 임시 MVC 컨트롤러였던 `src/main/java/com/example/shift/test/LoginSecurityTest.java`는 제거되었다.
-- `entity` enum과 `Employee`, `Team`, `Position` 초안은 추가되었지만, repository/service/controller/dto 구현은 아직 진행 전이다.
-- 현재 `Employee`가 단일 `Position`만 가지므로, 계획대로 여러 포지션을 지원하려면 `Set<Position>` 구조로 맞춰야 한다.
-
 ## DB 전략
 
-운영 서버와 프론트엔드 연동 개발은 MySQL을 기준으로 한다.
+local/dev, frontend integration, staging-like check, production은 MySQL을 기준으로 한다.
 
-- `local/dev` profile: MySQL을 사용한다. React/Vite PWA가 호출하는 실제 API는 이 profile로 검증한다.
-- `test` profile: 빠른 JPA 단위 테스트에는 H2를 사용할 수 있다.
-- 운영 전 통합 테스트: 반드시 MySQL 기준으로 실행한다.
-- `prod` profile: MySQL을 사용하고, 개발용 CORS origin과 seed/test data가 남지 않도록 분리한다.
+H2는 빠른 JPA slice test 용도로만 사용한다.
 
-이 프로젝트는 날짜 범위, `LocalDate`, `LocalTime`, enum, 다대다 join table, unique/index 조건을 많이 사용한다. H2만 기준으로 개발하면 MySQL에서 DDL, 예약어, enum/string 저장, 날짜/시간 처리 차이를 늦게 발견할 수 있으므로, 6월 초부터 MySQL dev profile을 준비한다.
+프로필:
+
+- `local/dev`: MySQL. React/Vite PWA가 실제 API를 호출하는 환경.
+- `test`: H2. 빠른 테스트용이며 MySQL compatibility mode를 선호한다.
+- pre-release integration: MySQL 필수.
+- `prod`: MySQL. 개발 CORS origin과 seed/test data는 제외한다.
+
+H2만 믿으면 MySQL에서 DDL, reserved word, enum/string 저장, 날짜/시간 처리, constraint/index 차이로 문제가 늦게 발견될 수 있다.
 
 ## 서버 환경 전략
 
-개발 중 수시로 실제 서버에 올려 프론트와 API가 잘 붙는지 확인해야 하므로, 개발서버와 운영서버를 분리한다.
+운영 서버와 개발 서버는 분리하는 것을 권장한다.
 
-추천 환경:
+환경:
 
 ```text
 local
-- 개인 PC 개발 환경
-- 빠른 코드 수정과 단위 테스트
-- MySQL dev 또는 H2 test 사용
+- 개발자 PC
+- 빠른 코드 수정과 unit/slice test
+- local MySQL dev 또는 H2 test 사용
 
 development server
-- 2026-06-05부터 상시 배포 대상
-- 프론트 개발자가 실제 API를 호출하며 확인하는 환경
+- 2026-06-05 전후 첫 배포 대상
+- 프론트엔드가 실제 backend URL을 호출하는 개발 환경
 - 별도 MySQL dev DB 사용
-- mock/minimal API skeleton도 배포 가능
-- 데이터는 언제든 초기화될 수 있음
+- mock/minimal API skeleton 배포 가능
+- 데이터는 언제든 초기화 가능
 
 production server
-- 2026-07-01 운영 오픈 대상
-- 실제 사용자/운영 데이터
-- 운영 MySQL DB 사용
-- 검증된 버전만 배포
+- 2026-07-01 운영 시작 목표
+- 실제 사용자와 운영 데이터
+- production MySQL DB 사용
+- 검증된 release candidate만 배포
 ```
 
-운영서버와 개발서버를 분리하는 이유:
+권장:
 
-- 개발 중 API가 깨져도 운영 사용자는 영향을 받지 않는다.
-- 프론트가 실제 네트워크/CORS/배포 환경에서 API를 빨리 검증할 수 있다.
-- MySQL, 환경변수, 도메인, CORS, HTTPS 같은 운영에 가까운 문제를 6월 초부터 발견할 수 있다.
-- 테스트 데이터와 실제 운영 데이터를 섞지 않는다.
-
-비교:
-
-```text
-개발/운영 서버 분리
-- 장점: 안전함, 배포 연습 가능, 프론트 연동 확인 쉬움, 운영 데이터 보호
-- 단점: 비용과 설정이 조금 늘어남
-- 추천도: 가장 좋음
-
-서버 하나만 사용
-- 장점: 비용과 설정이 단순함
-- 단점: 개발 배포가 운영에 영향을 줄 수 있음, 테스트 데이터와 운영 데이터 분리 어려움
-- 추천도: 7/1 운영 오픈 목표에는 위험함
-
-같은 VPS 안에서 논리적으로 분리
-- 예: dev/prod 앱 프로세스, dev/prod DB, dev/prod 환경변수, dev/prod 도메인 분리
-- 장점: 비용을 줄이면서 최소한의 안전장치 확보
-- 단점: 서버 장애나 리소스 문제는 같이 영향을 받을 수 있음
-- 추천도: 비용이 부담될 때의 현실적인 최소안
-```
-
-최종 추천은 개발서버와 운영서버를 물리적으로 분리하는 것이다. 예산이나 관리 부담 때문에 어렵다면, 최소한 같은 서버 안에서도 dev/prod 프로세스와 DB를 분리한다.
+- 가능하면 개발 서버와 운영 서버를 물리적으로 분리한다.
+- 비용이나 관리 부담이 있으면 하나의 VPS 안에서 dev/prod process, DB, env var, domain을 논리적으로 분리한다.
+- 하나의 서버/DB만 사용하는 방식은 2026-07-01 출시 목표에는 위험하다.
 
 ## 병행 개발 일정
 
-운영 오픈 목표는 2026-07-01이다. 백엔드 전체 완성 후 프론트를 시작하면 일정 리스크가 크므로, API 계약을 먼저 고정하고 백엔드와 프론트를 병행한다.
+운영 시작 목표는 2026-07-01이지만, 배포와 운영 리허설에 시간이 필요하므로 개발 완료 목표는 2026-06-20으로 앞당긴다. 2026-06-21 이후는 기능 개발이 아니라 release candidate 안정화, 배포 리허설, 모바일 QA, 운영 환경 점검에 사용한다.
+
+프론트엔드는 별도 React/Vite 프로젝트로 2026-06-03에 시작한다. 이때 백엔드 전체 기능이 끝나 있지 않아도, `/api/v1/**` endpoint 이름과 DTO 계약을 먼저 고정하고 mock/minimal response로 화면 개발을 병행한다.
 
 ```text
-2026-05-29 ~ 2026-06-02
-- 현재 컴파일 실패 복구
-- Employee/Team/Position 모델과 repository 정리
-- MySQL dev profile 추가
+2026-05-30 ~ 2026-06-02
+- 현재 테스트 통과 상태 유지
+- Employee/Team/Position/EmployeeService 구현 상태 확인 및 부족한 테스트 보강
 - 화면별 API 목록과 DTO 계약 확정
+- MySQL dev profile, test profile, CORS 설계 정리
+- /api/v1 controller + dto skeleton의 실패 테스트 준비
 
 2026-06-03 ~ 2026-06-05
 - /api/v1 controller + dto skeleton 구현
-- mock 또는 minimal 응답으로 프론트 호출 가능 상태 만들기
-- 개발서버 첫 배포
-- 개발서버에서 CORS, MySQL 연결, 기본 API smoke test 확인
-- 프론트 프로젝트에서 API client와 기본 화면 개발 시작
+- 아직 domain logic이 없는 endpoint는 mock 또는 minimal response 반환
+- SecurityConfig/CORS 설정 추가
+- 개발 서버 첫 배포 또는 로컬 통합 실행 기준 확정
+- CORS, MySQL 연결, API smoke test 확인
+- 별도 React/Vite PWA 프로젝트 생성
+- 프론트엔드 API client, TypeScript DTO type, 모바일 shell, Home/Schedule 기본 화면 시작
 
 2026-06-08 ~ 2026-06-12
-- Schedule, Employee, eligible substitutes 실제 구현
-- Home/Schedule 화면과 실제 API 연동
-- 개발서버에 최소 하루 1회 배포하고 프론트 연동 확인
+- SchedulePattern, Shift, ScheduleService 실제 구현
+- Employee, eligible substitutes API를 실제 service와 연결
+- Home/Schedule 화면을 실제 API와 연결
+- My Requests/Manager Queue 화면의 정적 shell 준비
+- 개발 서버 또는 로컬 통합 환경에서 매일 최소 1회 프론트 연동 확인
 
-2026-06-15 ~ 2026-06-19
-- coverage/absence/leave request와 manager queue 구현
-- My Requests와 Manager Queue 화면 연동
-- 개발서버에서 요청 생성/승인 흐름 end-to-end 확인
+2026-06-13 ~ 2026-06-16
+- CoverageRequest, absence request, planned leave backend 구현
+- Manager Queue read/approve/decline API 구현
+- My Requests와 Manager Queue 화면을 실제 API와 연결
+- 요청 생성/승인 흐름 end-to-end 확인
 
-2026-06-22 ~ 2026-06-24
-- open shift 신청/배정, 승인/거절 흐름 구현
-- MVP 핵심 기능 완성
-- 개발서버를 release candidate 환경처럼 사용
+2026-06-17 ~ 2026-06-20
+- OpenShift application, assignment, approval, decline 구현
+- 직원/매니저 핵심 흐름 모바일 QA
+- loading/empty/error state 보강
+- API error response와 CORS 최종 점검
+- MVP 개발 완료
 
-2026-06-25 ~ 2026-06-26
-- API 오류 응답, CORS, 테스트 보강
-- 로딩/빈 상태/에러 상태와 통합 QA
-- 운영서버 배포 절차 리허설
-
-2026-06-29 ~ 2026-06-30
-- MySQL 기준 운영 profile/env/배포 리허설
+2026-06-21 ~ 2026-06-24
+- release candidate 안정화
+- MySQL 기반 통합 테스트
 - 모바일 브라우저 smoke test
+- production deployment 절차 1차 리허설
+
+2026-06-25 ~ 2026-06-30
+- 운영 profile/env/domain/DB 점검
+- 배포 절차 2차 리허설
+- 회귀 테스트와 최종 버그 수정
+- 운영 데이터 초기값과 rollback 절차 확인
 
 2026-07-01
-- 운영 서버 오픈
+- production server launch
 ```
 
-핵심 마일스톤은 2026-06-05까지 프론트가 호출할 수 있는 API skeleton을 여는 것이다. 내부 비즈니스 로직은 이후 실제 구현으로 교체하되, request/response DTO와 endpoint 이름은 최대한 안정적으로 유지한다.
+가장 중요한 milestone은 2026-06-05다. 이때까지 프론트엔드가 안정적인 `/api/v1/**` skeleton endpoint를 호출할 수 있어야 한다. 두 번째 milestone은 2026-06-12다. 이때 Home/Schedule이 실제 API로 동작해야 한다. 세 번째 milestone은 2026-06-20이며, 이때는 신규 기능 개발을 멈추고 release candidate 안정화로 넘어간다.
 
-## 포함 범위
+## 파일 구조
 
-이번 백엔드 foundation 계획에 포함되는 것:
+main source:
 
-- Employee, Team, Position 모델
-- 직원의 여러 팀 소속
-- 같은 팀 기반의 대체 근무 가능 여부 판단
-- 고정 주간 스케줄 패턴
-- 실제 날짜 기반 Shift
-- 대체자를 지정한 coverage request
-- 대체자 없는 absence request
-- planned leave request
-- 승인된 leave 기간의 assigned shift를 open shift로 전환
-- open shift application
-- manager direct assignment
-- `/api/v1/**` REST API
-- 프론트 병행 개발을 위한 API 계약과 skeleton endpoint
-- 별도 React/Vite PWA와 통신하기 위한 CORS 설정
-- MySQL 기반 local/dev profile
-- H2 기반 빠른 JPA 테스트 profile
-- 미래 React Native 클라이언트가 재사용할 수 있는 DTO 기반 API 계약
+```text
+src/main/java/com/example/shift/entity
+src/main/java/com/example/shift/repository
+src/main/java/com/example/shift/service
+src/main/java/com/example/shift/controller
+src/main/java/com/example/shift/dto
+```
 
-이번 계획에서 제외하는 것:
+test source:
 
-- 프론트엔드 화면 구현
-- React Native 앱 구현
-- 앱스토어/플레이스토어 배포
-- push notification, biometric login, offline sync
-- production authentication/invitation flow
-- tenant/company/location 모델
-- payroll/overtime 계산
-- notification delivery
-- published schedule period
+```text
+src/test/java
+  com/example/shift/service
+  com/example/shift/controller
+```
 
-## 프로젝트 어휘
+테스트는 반드시 `src/test/java` 아래에 둔다. `src/main/java` 아래에 `test` 패키지를 만들지 않는다.
 
-다음 enum 이름을 일관되게 사용한다.
+## 프로젝트 용어
+
+enum 이름은 다음과 같이 일관되게 사용한다.
 
 ```java
-public enum EmployeeRole {
-    EMPLOYEE,
-    MANAGER,
-    OWNER
-}
-
-public enum ShiftStatus {
-    SCHEDULED,
-    OPEN,
-    CANCELLED,
-    COVERED,
-    NEEDS_COVERAGE
-}
-
-public enum ShiftCreationReason {
-    PATTERN,
-    ABSENCE_REQUEST,
-    LEAVE_REQUEST,
-    EXTRA_STAFFING,
-    NEW_POSITION_COVERAGE,
-    MANUAL
-}
-
-public enum RequestStatus {
-    PENDING,
-    APPROVED,
-    DECLINED,
-    CANCELLED
-}
-
-public enum CoverageRequestType {
-    SUBSTITUTE_REQUESTED,
-    ABSENCE_WITHOUT_SUBSTITUTE
-}
-
-public enum SchedulePatternType {
-    FIXED_WEEKLY
-}
+public enum EmployeeRole { EMPLOYEE, MANAGER, OWNER }
+public enum ShiftStatus { SCHEDULED, OPEN, CANCELLED, COVERED, NEEDS_COVERAGE }
+public enum ShiftCreationReason { PATTERN, ABSENCE_REQUEST, LEAVE_REQUEST, EXTRA_STAFFING, NEW_POSITION_COVERAGE, MANUAL }
+public enum RequestStatus { PENDING, APPROVED, DECLINED, CANCELLED }
+public enum CoverageRequestType { SUBSTITUTE_REQUESTED, ABSENCE_WITHOUT_SUBSTITUTE }
+public enum SchedulePatternType { FIXED_WEEKLY }
 ```
 
-`SchedulePatternType.FIXED_WEEKLY`는 매주 같은 고정 스케줄을 쓰는 식당을 위한 반복 템플릿 유형이다. 예를 들어 매주 월/화 full, 수요일 evening, 목/토 off처럼 같은 패턴이 반복되는 운영을 표현한다.
+`SchedulePatternType.FIXED_WEEKLY`는 매주 같은 고정 스케줄을 나타낸다. 예를 들어 월/화 full, 수 evening, 목/토 off, 금/일 full 같은 반복 패턴이다.
 
-차후 매니저가 1주, 2주, 3주, 4주 또는 커스텀 기간의 실제 스케줄을 직접 만들고 게시하는 기능은 `SchedulePatternType`을 늘리는 방식이 아니라 future `PublishedSchedulePeriod` 모델로 다룬다. 이때 고정 weekly pattern은 선택한 기간의 draft shift를 빠르게 만드는 템플릿으로 사용할 수 있고, 매니저는 생성된 shift를 직접 수정한 뒤 게시한다.
+향후 1주, 2주, 3주, 4주 또는 custom period를 매니저가 직접 작성하고 publish하는 기능은 `PublishedSchedulePeriod`로 확장한다. `SchedulePatternType`은 반복 규칙 자체가 달라질 때만 확장한다.
 
-`SchedulePatternType`은 반복 규칙 자체가 달라질 때만 확장한다. 예를 들어 A주/B주가 자동 반복되는 요구가 생기면 `ROTATING_MULTI_WEEK` 같은 값을 추가할 수 있다.
+## Task 1: Maven Wrapper 기준 확인과 임시 controller 제거
 
-## Task 1: Maven Wrapper 기준 확인과 임시 컨트롤러 제거
+목표:
 
-상태:
+- Maven wrapper가 테스트를 실행할 수 있는지 확인한다.
+- `src/main/java` 아래의 임시 test controller를 제거한다.
 
-- `.\mvnw.cmd -q test` 통과 확인 완료
-- `LoginSecurityTest.java` 제거 완료
-- `src/main/java` 아래 `test` 패키지 없음 확인 완료
+관련 파일:
+
+```text
+src/main/java/com/example/shift/test/LoginSecurityTest.java
+.mvn/wrapper/maven-wrapper.properties
+mvnw.cmd
+```
 
 확인 명령:
 
@@ -303,17 +248,17 @@ Get-ChildItem -Recurse src/main/java -File | Where-Object { $_.FullName -match "
 
 학습 포인트:
 
-- `src/test/java`는 테스트 코드 위치이다.
+- `src/test/java`는 테스트 코드 위치다.
 - `src/main/java` 아래 코드는 실제 애플리케이션 코드로 포함된다.
-- 이름이 `Test`여도 `src/main/java`에 있고 `@Controller`가 붙어 있으면 실제 서버 코드이다.
+- 이름이 `Test`여도 `src/main/java`에 있고 `@Controller`가 붙어 있으면 실제 서버 코드다.
 
 ## Task 2: Entity Enum 추가
 
 목표:
 
-`entity` 패키지를 만들고, 앞으로 엔티티에서 사용할 enum을 추가한다.
+`entity` 패키지에 앞으로 entity에서 사용할 enum을 추가한다.
 
-생성할 파일:
+생성 파일:
 
 ```text
 src/main/java/com/example/shift/entity/EmployeeRole.java
@@ -324,19 +269,19 @@ src/main/java/com/example/shift/entity/CoverageRequestType.java
 src/main/java/com/example/shift/entity/SchedulePatternType.java
 ```
 
-진행 순서:
+진행:
 
-1. `src/main/java/com/example/shift/entity` 패키지를 만든다.
-2. `EmployeeRole` enum 하나를 먼저 만든다.
-3. `.\mvnw.cmd -q test`를 실행해 통과를 확인한다.
-4. 나머지 enum을 같은 방식으로 추가한다.
-5. 전체 테스트를 다시 실행한다.
+1. `entity` 패키지를 만든다.
+2. `EmployeeRole` 하나를 먼저 만든다.
+3. `.\mvnw.cmd -q test`로 확인한다.
+4. 나머지 enum도 같은 방식으로 추가한다.
+5. 전체 테스트를 다시 확인한다.
 
 학습 포인트:
 
-- enum은 정해진 선택지 목록을 타입으로 표현하는 Java 문법이다.
+- enum은 정해진 선택지를 타입으로 표현하는 Java 문법이다.
 - 문자열보다 오타와 잘못된 값을 줄일 수 있다.
-- JPA 엔티티 필드로 저장될 값이므로 이번 프로젝트에서는 `entity` 패키지에 둔다.
+- JPA entity에서 저장될 값이므로 `entity` 패키지에 둔다.
 
 ## Task 3: Staff Entity와 Repository 추가
 
@@ -344,15 +289,7 @@ src/main/java/com/example/shift/entity/SchedulePatternType.java
 
 직원, 팀, 포지션을 DB에 저장할 수 있게 만든다.
 
-모델링 메모:
-
-- `Team`은 대체 근무 가능 여부를 판단하기 위한 운영 그룹이다. 예: Sushi Bar, Kitchen, Hall, Dinner Service.
-- `Position`은 팀 안에서 맡는 직무이다. 예: Chef, Kitchen Helper, Roll Man, Sushi Man, Server, Cashier.
-- `Employee`는 연락처를 하나의 필드로 뭉치지 않고 `email`과 `phoneNumber`를 분리한다.
-- `Employee`는 하나의 `position`이 아니라 여러 `positions`를 가진다. MVP에서는 `Set<Position>`으로 단순하게 표현하고, 차후 포지션별 시급, 자격 상태, 적용 기간이 필요해지면 `EmployeePosition` 엔티티로 확장한다.
-- 오전, 오후, 미들, 마감, 풀타임, 커스텀 시간은 포지션이 아니다. MVP에서는 Shift에 실제 시작/종료 시간을 직접 저장하고, 차후 `ShiftTemplate`으로 매장별 시간 프리셋을 제공한다.
-
-생성할 파일:
+생성 파일:
 
 ```text
 src/main/java/com/example/shift/entity/Position.java
@@ -364,131 +301,227 @@ src/main/java/com/example/shift/repository/EmployeeRepository.java
 src/test/java/com/example/shift/service/EmployeeServiceTest.java
 ```
 
+모델 메모:
+
+- `Team`은 substitute eligibility 판단에 사용하는 운영 그룹이다.
+- `Position`은 팀 안에서 맡는 직무다.
+- 한 직원은 여러 `Position`과 여러 `Team`을 가질 수 있다.
+- MVP에서는 `Employee.positions`를 직접 사용한다.
+- 향후 시급, 자격 상태, 적용 기간이 필요하면 `EmployeePosition`으로 확장한다.
+- morning, afternoon, closing, full 같은 시간대는 position이 아니다. MVP에서는 `Shift`에 실제 시작/종료 시간을 저장한다.
+
 TDD 순서:
 
-1. `EmployeeServiceTest`에 “직원이 여러 팀에 속할 수 있다”는 실패 테스트를 먼저 만든다.
-2. `.\mvnw.cmd -q -Dtest=EmployeeServiceTest test`를 실행해 실패를 확인한다.
-3. `Position`, `Team`, `Employee` 엔티티를 만든다.
-4. 각 Repository를 만든다.
+1. 직원이 여러 팀/포지션을 가질 수 있다는 실패 테스트를 먼저 작성한다.
+2. `.\mvnw.cmd -q -Dtest=EmployeeServiceTest test`로 실패를 확인한다.
+3. `Position`, `Team`, `Employee` entity를 만든다.
+4. 각 repository를 만든다.
 5. 같은 테스트가 통과하는지 확인한다.
 
 학습 포인트:
 
-- `@Entity`는 DB 테이블과 매핑되는 객체이다.
-- `Repository`는 DB 접근을 담당한다.
-- 다대다 관계 또는 조인 테이블이 필요한 지점을 학습한다.
+- `@Entity`는 DB 테이블과 매핑되는 객체다.
+- repository는 DB 접근을 담당한다.
+- many-to-many 관계와 join table의 기본 구조를 익힌다.
 
-## Task 4: EmployeeService와 대체 근무 가능 여부
+## Task 4: EmployeeService와 대체근무 가능자 조회
 
 목표:
 
-같은 팀에 속한 active 직원만 대체 근무자로 추천되도록 한다.
+같은 팀을 공유하는 active 직원만 대체근무자로 추천한다.
 
 규칙:
 
-- 대체 근무자는 active 상태여야 한다.
-- 요청자와 최소 하나 이상의 팀을 공유해야 한다.
-- 자기 자신은 대체 근무자가 될 수 없다.
+- 대체근무자는 active 상태여야 한다.
+- 요청자와 최소 한 팀을 공유해야 한다.
+- 자기 자신은 대체근무자가 될 수 없다.
+
+관련 파일:
+
+```text
+src/main/java/com/example/shift/service/EmployeeService.java
+src/test/java/com/example/shift/service/EmployeeServiceTest.java
+```
 
 학습 포인트:
 
-- 컨트롤러가 아니라 서비스에 비즈니스 규칙을 둔다.
-- 엔티티에는 작은 도메인 메서드, 예를 들어 `sharesTeamWith(Employee other)`를 둘 수 있다.
+- business rule은 controller가 아니라 service에 둔다.
+- entity에는 작은 domain helper method를 둘 수 있다. 예: `sharesTeamWith(Employee other)`.
+- 테스트는 한 가지 이유로 실패하도록 나누는 것이 좋다.
 
 ## Task 5: Shift와 Fixed Weekly Schedule Pattern 추가
 
 목표:
 
-고정 주간 패턴과 실제 날짜의 Shift를 표현한다.
+고정 주간 패턴과 실제 날짜의 shift를 표현한다.
 
-주요 엔티티:
+생성 파일:
 
 ```text
-Shift
-SchedulePattern
-SchedulePatternShift
+src/main/java/com/example/shift/entity/Shift.java
+src/main/java/com/example/shift/entity/SchedulePattern.java
+src/main/java/com/example/shift/entity/SchedulePatternShift.java
+src/main/java/com/example/shift/repository/ShiftRepository.java
+src/main/java/com/example/shift/repository/SchedulePatternRepository.java
+src/test/java/com/example/shift/service/ScheduleServiceTest.java
+```
+
+필수 `Shift` 필드:
+
+- `shiftDate`
+- `startTime`
+- `endTime`
+- `position`
+- nullable `assignedEmployee`
+- `status`
+- `creationReason`
+
+필수 `Shift` 메서드:
+
+```java
+public void assignTo(Employee employee) {
+    this.assignedEmployee = employee;
+    this.status = ShiftStatus.SCHEDULED;
+}
+
+public void open(ShiftCreationReason reason) {
+    this.assignedEmployee = null;
+    this.status = ShiftStatus.OPEN;
+    this.creationReason = reason;
+}
+
+public void coverBy(Employee employee) {
+    this.assignedEmployee = employee;
+    this.status = ShiftStatus.COVERED;
+}
 ```
 
 학습 포인트:
 
-- “반복되는 패턴”과 “실제 날짜의 근무”를 분리한다.
-- `LocalDate`, `LocalTime`, enum 상태값을 사용한다.
-- MVP의 `SchedulePatternType.FIXED_WEEKLY`는 고정 스케줄 식당을 위한 템플릿이다.
-- 차후 1주/2주/3주/4주/커스텀 기간의 매니저 직접 편집 스케줄은 `PublishedSchedulePeriod`로 확장한다.
-- `Shift`는 예정 근무 시간이다. 실제 출근/퇴근, 조퇴, 지각, 휴게 시간, payroll export는 차후 `TimeClockRecord` 또는 `ActualWorkRecord`로 분리한다.
+- 반복되는 패턴과 실제 날짜의 근무를 분리한다.
+- `LocalDate`, `LocalTime`, enum status를 사용한다.
+- `Shift`는 예정 근무다. 실제 출퇴근, 조퇴, 지각, 휴게시간, 급여 export는 향후 별도 모델로 분리한다.
 
 ## Task 6: ScheduleService Shift 생성
 
 목표:
 
-고정 주간 패턴을 기준으로 날짜 범위 안의 Shift를 생성한다.
+fixed weekly pattern을 기준으로 날짜 범위 안의 shift를 생성한다.
+
+서비스 메서드:
+
+```java
+public void generateFixedWeeklyShifts(LocalDate startDate, LocalDate endDate)
+public List<Shift> findSchedule(LocalDate startDate, LocalDate endDate)
+```
+
+규칙:
+
+- `endDate`는 `startDate`보다 같거나 뒤여야 한다.
+- 모든 schedule pattern을 읽는다.
+- `DayOfWeek`가 일치하는 pattern row로 shift를 생성한다.
+- 생성된 shift는 `SCHEDULED`, `PATTERN`을 사용한다.
+- 같은 직원/날짜/시작/종료 시간의 중복 shift를 만들지 않는다.
 
 학습 포인트:
 
-- 서비스가 비즈니스 동작의 중심이 된다.
-- 같은 날짜 범위에 대해 중복 Shift가 생기지 않도록 테스트한다.
+- service가 비즈니스 동작의 중심이다.
+- 날짜 범위와 중복 생성 방지를 테스트한다.
 
 ## Task 7: Coverage Request 흐름 추가
 
 목표:
 
-직원이 특정 Shift에 대해 대체 요청 또는 결근 요청을 만들 수 있게 한다.
+직원이 특정 shift에 대해 대체 요청 또는 대체자 없는 결근 요청을 만들 수 있게 한다.
+
+생성 파일:
+
+```text
+src/main/java/com/example/shift/entity/CoverageRequest.java
+src/main/java/com/example/shift/repository/CoverageRequestRepository.java
+src/main/java/com/example/shift/service/CoverageRequestService.java
+src/test/java/com/example/shift/service/CoverageRequestServiceTest.java
+```
 
 주요 규칙:
 
-- 대체 요청은 요청자, Shift, 대체자, 사유를 가진다.
-- 대체자는 요청자와 팀을 공유해야 한다.
-- 결근 요청은 대체자 없이 생성될 수 있다.
-- 요청 상태는 `PENDING`, `APPROVED`, `DECLINED`, `CANCELLED` 중 하나이다.
+- requester는 target shift에 배정된 직원이어야 한다.
+- substitute는 requester와 최소 한 팀을 공유해야 한다.
+- substitute request 승인 시 `targetShift.coverBy(substituteEmployee)`를 호출한다.
+- absence request 승인 시 `targetShift.open(ShiftCreationReason.ABSENCE_REQUEST)`를 호출한다.
 
-학습 포인트:
+테스트:
 
-- 요청 상태 관리를 enum으로 표현한다.
-- 승인/거절 같은 상태 변경 규칙은 서비스에 둔다.
+- shared team이 없는 substitute request는 실패한다.
+- shared team substitute request는 pending request를 만든다.
+- substitute request 승인 시 shift가 substitute로 covered 된다.
+- substitute 없는 absence 승인 시 shift가 open 된다.
 
 ## Task 8: Planned Leave 흐름 추가
 
 목표:
 
-직원이 날짜 범위 기반의 leave request를 만들 수 있게 한다.
+직원이 날짜 범위 기반 leave request를 만들 수 있게 한다.
+
+생성 파일:
+
+```text
+src/main/java/com/example/shift/entity/LeaveRequest.java
+src/main/java/com/example/shift/repository/LeaveRequestRepository.java
+src/main/java/com/example/shift/service/LeaveRequestService.java
+src/test/java/com/example/shift/service/LeaveRequestServiceTest.java
+```
 
 주요 규칙:
 
-- leave는 시작일과 종료일을 가진다.
-- 승인된 leave 기간에 직원이 배정된 Shift가 있으면 open shift로 전환한다.
+- `endDate`는 `startDate`보다 같거나 뒤여야 한다.
+- 승인 시 leave 기간의 employee shift를 open으로 전환한다.
+- 승인 시 `approvedBy`, `approvedAt`, `APPROVED`를 설정한다.
+- `ScheduleService`는 approved leave 중인 직원에 대해 shift 생성을 건너뛴다.
 
 학습 포인트:
 
 - 날짜 범위 조건을 테스트한다.
-- 하나의 승인 동작이 여러 Shift 상태를 바꾸는 흐름을 학습한다.
+- 하나의 승인 동작이 여러 shift 상태를 바꾸는 흐름을 익힌다.
 
 ## Task 9: Open Shift Application과 Assignment 추가
 
 목표:
 
-open shift에 직원이 신청하고, 매니저가 직접 배정할 수 있게 한다.
+직원이 open shift에 신청하고, 매니저가 승인하거나 직접 배정할 수 있게 한다.
+
+생성 파일:
+
+```text
+src/main/java/com/example/shift/entity/OpenShiftApplication.java
+src/main/java/com/example/shift/repository/OpenShiftApplicationRepository.java
+src/main/java/com/example/shift/service/OpenShiftService.java
+src/test/java/com/example/shift/service/OpenShiftServiceTest.java
+```
 
 주요 규칙:
 
-- open shift에만 신청할 수 있다.
-- inactive 직원은 배정할 수 없다.
-- 승인된 leave 중인 직원은 해당 날짜 Shift에 배정할 수 없다.
-- 배정되면 Shift 상태를 `SCHEDULED`로 바꾼다.
+- shift status는 `OPEN` 또는 `NEEDS_COVERAGE`여야 한다.
+- 직원은 active 상태여야 한다.
+- approved leave 중인 직원은 해당 날짜 shift에 배정할 수 없다.
+- 배정되면 assigned employee를 설정하고 shift status를 `SCHEDULED`로 바꾼다.
 
-학습 포인트:
+테스트:
 
-- 상태 전이를 테스트로 먼저 고정한다.
-- 서비스가 여러 Repository를 조합하는 방식을 익힌다.
+- 직원이 open shift에 신청할 수 있다.
+- application 승인 시 직원이 배정된다.
+- 매니저가 직접 open shift에 직원을 배정할 수 있다.
+- approved leave 중인 직원은 배정할 수 없다.
 
 ## Task 10: Versioned REST API, CORS, MVP Security
 
 목표:
 
-프론트엔드와 통신할 `/api/v1/**` REST API를 만든다.
+프론트엔드가 호출할 `/api/v1/**` REST API를 만든다.
 
-이번 Task는 전체 비즈니스 로직이 끝난 뒤에만 시작하지 않는다. 2026-06-05까지 프론트 개발을 시작할 수 있도록 controller와 dto skeleton을 먼저 만들고, mock 또는 minimal 응답으로 API 계약을 열어둔다. 이후 Task 5~9의 실제 서비스 구현이 완성될 때 skeleton 내부를 실제 service 호출로 교체한다.
+이 task는 모든 domain workflow가 끝난 뒤에만 시작하지 않는다. 2026-06-05까지 프론트엔드가 개발을 시작할 수 있도록 controller와 dto skeleton을 먼저 만들고, 아직 구현되지 않은 내부 로직은 mock 또는 minimal response로 둔다. 이후 Task 5~9의 실제 service 구현으로 교체한다.
 
-생성할 주요 파일:
+생성/수정 파일:
 
 ```text
 src/main/java/com/example/shift/config/CorsProperties.java
@@ -505,7 +538,7 @@ src/test/java/com/example/shift/controller/CorsConfigTest.java
 src/test/java/com/example/shift/controller/ShiftCoverageApiTest.java
 ```
 
-API 예시:
+API 예:
 
 ```text
 GET  /api/v1/employees/{id}/eligible-substitutes
@@ -517,7 +550,7 @@ POST /api/v1/open-shifts/{shiftId}/applications
 POST /api/v1/open-shifts/{shiftId}/assignments
 ```
 
-DTO 이름 예시:
+DTO 예:
 
 ```text
 ShiftSummaryResponse
@@ -530,10 +563,9 @@ LeaveRequestPayload
 OpenShiftApplyRequest
 ```
 
-DB profile 기준:
+`application-dev.yml` 예:
 
 ```yaml
-# application-dev.yml
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/managing_shift_dev?serverTimezone=America/Vancouver&characterEncoding=UTF-8
@@ -550,8 +582,9 @@ app:
       - http://127.0.0.1:5173
 ```
 
+`application-test.yml` 예:
+
 ```yaml
-# application-test.yml
 spring:
   datasource:
     url: jdbc:h2:mem:managing_shift_test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
@@ -562,20 +595,20 @@ spring:
 
 학습 포인트:
 
-- Entity를 API 응답으로 직접 노출하지 않는다.
-- Controller는 DTO를 받고 DTO를 반환한다.
-- Controller는 Service를 호출만 하고 비즈니스 규칙을 직접 처리하지 않는다.
+- entity를 API response로 직접 노출하지 않는다.
+- controller는 DTO를 받고 DTO를 반환한다.
+- controller는 service를 호출만 하고 business rule을 직접 처리하지 않는다.
 - CORS는 별도 React/Vite PWA와 통신하기 위해 필요하다.
 
 ## 테스트 원칙
 
-새 기능은 가능한 한 다음 순서로 진행한다.
+각 기능은 가능한 한 다음 순서로 진행한다.
 
 1. 실패하는 테스트를 먼저 작성한다.
-2. 테스트가 기대한 이유로 실패하는지 확인한다.
-3. 최소한의 구현으로 테스트를 통과시킨다.
-4. 전체 테스트를 다시 실행한다.
-5. 필요하면 리팩터링한다.
+2. 왜 실패하는지 확인한다.
+3. 최소 구현으로 테스트를 통과시킨다.
+4. 필요한 경우 리팩터링한다.
+5. 관련 테스트를 다시 실행한다.
 
 기본 명령:
 
@@ -583,44 +616,57 @@ spring:
 .\mvnw.cmd -q test
 ```
 
-MySQL dev profile로 앱 실행:
+특정 테스트:
+
+```powershell
+.\mvnw.cmd -q -Dtest=EmployeeServiceTest test
+```
+
+MySQL dev profile 실행:
 
 ```powershell
 $env:SPRING_PROFILES_ACTIVE="dev"
 .\mvnw.cmd spring-boot:run
 ```
 
-운영 전에는 H2 테스트 통과만으로 완료 처리하지 않는다. 주요 API smoke test와 프론트 연동 테스트는 MySQL dev 또는 운영과 같은 MySQL staging 환경에서 확인한다.
+H2 테스트만 통과했다고 완료로 보지 않는다. 주요 API smoke test와 프론트엔드 연동은 MySQL dev 또는 staging-like MySQL 환경에서 확인한다.
 
-특정 테스트만 실행:
+## 학습 모드 진행 메모
 
-```powershell
-.\mvnw.cmd -q -Dtest=EmployeeServiceTest test
-```
-
-## 실행 메모
-
-이 프로젝트는 학습 모드로 진행한다.
+이 프로젝트는 guided learning mode로 진행한다.
 
 - 먼저 목표를 말로 설명한다.
 - 관련 파일과 개념을 확인한다.
 - 사용자가 작은 단계를 직접 시도한다.
 - 결과를 함께 확인한다.
-- 막히면 힌트를 먼저 주고, 필요한 경우에만 최소 코드 예시를 제공한다.
+- 막히면 힌트를 먼저 주고, 필요할 때만 최소 코드 예시를 제공한다.
+- 한 단계마다 필요한 테스트를 실행하거나 요청한다.
+- 다음 task로 넘어가기 전에 무엇을 배웠는지 요약한다.
+
+구현계획서의 코드 예시는 참고 자료이며, 반드시 그대로 복사해야 하는 정답은 아니다.
 
 ## Self-Review
 
 이 계획은 다음 요구를 다룬다.
 
-- 직원, 포지션, 팀, 여러 팀 소속
-- 같은 팀 기반 대체 가능성
-- 고정 주간 스케줄 패턴
-- 실제 날짜 기반 Shift
-- 대체 요청과 결근 요청
-- planned leave와 Shift open 전환
-- open shift 신청과 직접 배정
-- manager/owner가 사용할 수 있는 백엔드 API 표면
-- React/Vite PWA와의 CORS 통신
-- 미래 React Native 클라이언트가 재사용할 수 있는 `/api/v1/**` API 계약
+- Employee, Position, Team, multiple membership.
+- shared-team substitute eligibility.
+- fixed weekly schedule pattern.
+- actual dated Shift.
+- coverage request with substitute.
+- absence request without substitute.
+- planned leave와 shift open conversion.
+- open shift application and direct assignment.
+- manager/owner approval backend surface.
+- React/Vite PWA CORS communication.
+- future React Native client를 위한 `/api/v1/**` API contract.
+- MySQL-backed local/dev integration.
+- H2-backed fast test support.
 
-프론트엔드 화면 구현은 이 계획의 범위가 아니다.
+제외 범위:
+
+- 프론트엔드 화면 구현.
+- React Native 앱 구현.
+- payroll/overtime calculation.
+- tenant/location/auth invitation.
+- notification delivery.

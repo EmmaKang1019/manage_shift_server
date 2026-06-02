@@ -26,17 +26,12 @@ public class EmployeeServiceTest {
     @Autowired
     TeamRepository teams;
 
-
     @Test
     void employeeCanBelongToMultipleTeams(){
-        EmployeeService service = new EmployeeService(employees);
-
         Position server = positions.save(new Position("Server"));
         Position kitchenHelper = positions.save(new Position("kitchenHelper"));
-
         Team closing = teams.save(new Team("Closing"));
         Team kitchen = teams.save(new Team("Kitchen"));
-
         Employee saved = employees.saveAndFlush(new Employee(
                 "Mina",
                 "mina@example.com",
@@ -46,29 +41,23 @@ public class EmployeeServiceTest {
                 Set.of(kitchen, closing),
                 true
         ));
-        Employee cara = employees.saveAndFlush(new Employee(
-                "cara",
-                "cara@example.com",
-                "778-231-1245",
-                EmployeeRole.EMPLOYEE,
-                Set.of(kitchenHelper),
-                Set.of(kitchen),
-                true
-                )
-        );
-        Employee inactive = employees.saveAndFlush(new Employee(
-                "inactive",
-                "in@example.com",
-                "1234-123-0124",
-                EmployeeRole.EMPLOYEE,
-                Set.of(server),
-                Set.of(closing),
-                false
-        ));
+
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getTeams())
                 .extracting(Team::getName)
                 .containsExactlyInAnyOrder("Kitchen","Closing");
+        assertThat(saved.getPositions()).extracting(Position::getName).containsExactlyInAnyOrder("Server","kitchenHelper");
+
+    }
+    @Test
+    void findEligibleSubstitutesReturnsActiveEmployeesSharingTeam(){
+        EmployeeService service = new EmployeeService(employees);
+
+        Position server = positions.save(new Position("Server"));
+        Position kitchenHelper = positions.save(new Position("kitchenHelper"));
+        Team closing = teams.save(new Team("Closing"));
+        Team kitchen = teams.save(new Team("Kitchen"));
+
         Employee requester = employees.save(new Employee(
                 "Ben",
                 "ben@example.com",
@@ -78,9 +67,39 @@ public class EmployeeServiceTest {
                 Set.of(closing),
                 true
         ));
+        Employee cara = employees.saveAndFlush(new Employee(
+                        "cara",
+                        "cara@example.com",
+                        "778-231-1245",
+                        EmployeeRole.EMPLOYEE,
+                        Set.of(server),
+                        Set.of(kitchen),
+                        true
+                )
+        );
+
+        Employee inactive = employees.saveAndFlush(new Employee(
+                "inactive",
+                "in@example.com",
+                "1234-123-0124",
+                EmployeeRole.EMPLOYEE,
+                Set.of(server),
+                Set.of(closing),
+                false
+        ));
+        Employee mina = employees.saveAndFlush(new Employee(
+                "Mina",
+                "mina@example.com",
+                "604-555-0101",
+                EmployeeRole.EMPLOYEE,
+                Set.of(server),
+                Set.of(closing),
+                true
+        ));
+
         assertThat(service.findEligibleSubstitutes(requester.getId()))
                 .extracting(Employee::getName)
-                .containsExactly("Mina");
+                .containsExactlyInAnyOrder("Mina");
     }
 
 }
